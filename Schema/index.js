@@ -1,0 +1,232 @@
+import { composeMongoose } from "graphql-compose-mongoose";
+
+import {
+	SchemaComposer,
+	ScalarTypeComposer,
+	isSomeInputTypeComposer,
+} from "graphql-compose";
+import { applyMiddleware } from "graphql-middleware";
+import required from "../libs/required";
+import GraphQLJSON from "graphql-type-json";
+import { DateTimeTypeDefinition } from "graphql-scalars";
+
+import SchemaConfigurationHelper from "./libs/SchemaConfigurationHelper";
+import SchemaDirectiveHelper from "./libs/SchemaDirectiveHelper";
+import SchemaFieldHelper from "./libs/SchemaFieldHelper";
+import SchemaNameHelper from "./libs/SchemaNameHelper";
+import SchemaPermissionHelper from "./libs/SchemaPermissionHelper";
+import SchemaRelationHelper from "./libs/SchemaRelationHelper";
+import SchemaDescriptionHelper from "./libs/SchemaDescriptionHelper";
+import SchemaOverridesHelper from "./libs/SchemaOverridesHelper";
+import SchemaMiddlewareHelper from "./libs/SchemaMiddlewareHelper";
+import SchemaUnionTypeHelper from "./libs/SchemaUnionTypeHelper";
+import SchemaInterfaceTypeHelper from "./libs/SchemaInterfaceTypeHelper";
+
+const { NODE_ENV } = process.env;
+
+class Schema {
+	schemaComposer;
+	value;
+
+	constructor({
+		directives = [],
+		unions = [],
+		interfaces = [],
+		middlewares = [],
+		configurations = [],
+		permissions = [],
+		descriptions = [],
+		overrides = [],
+		extensions = [],
+	}) {
+		this.meta = {
+			directives,
+			unions,
+			interfaces,
+			middlewares,
+			configurations,
+			permissions,
+			descriptions,
+			overrides,
+			extensions,
+		};
+
+		this.schemaComposer = new SchemaComposer();
+
+		this.SchemaConfigurationHelper = new SchemaConfigurationHelper(this);
+		this.SchemaDirectiveHelper = new SchemaDirectiveHelper(this);
+		this.SchemaFieldHelper = new SchemaFieldHelper(this);
+		this.SchemaNameHelper = new SchemaNameHelper(this);
+		this.SchemaPermissionHelper = new SchemaPermissionHelper(this);
+		this.SchemaRelationHelper = new SchemaRelationHelper(this);
+		this.SchemaDescriptionHelper = new SchemaDescriptionHelper(this);
+		this.SchemaMiddlewareHelper = new SchemaMiddlewareHelper(this);
+		this.SchemaUnionTypeHelper = new SchemaUnionTypeHelper(this);
+		this.SchemaOverridesHelper = new SchemaOverridesHelper(this);
+		this.SchemaInterfaceTypeHelper = new SchemaInterfaceTypeHelper(this);
+	}
+
+	__addDirectives(schema = required`schema`) {
+		this.SchemaDirectiveHelper.directives.forEach(
+			({ transformer, name }) => (schema = transformer(schema, name))
+		);
+		return schema;
+	}
+
+	__addOperationsFromModels($ = required`$`) {
+		Object.keys($).forEach((name) => {
+			const { ucFirstSingular } = this.SchemaNameHelper.parseName(name);
+			const ModelTC = this.schemaComposer.getOTC(ucFirstSingular);
+			const configuration =
+				this.SchemaConfigurationHelper.getConfigurationByName(name);
+
+			if (!ModelTC || !configuration) return;
+
+			const addFieldParams = {
+				modelName: name,
+				configuration,
+				ModelTC,
+			};
+
+			this.SchemaFieldHelper.addQueryFields(addFieldParams);
+			this.SchemaFieldHelper.addMutationFields(addFieldParams);
+		});
+	}
+
+	__replaceSort(ModelTC = required`ModelTC`) {
+		for (const mongooseResolverName in ModelTC.mongooseResolvers) {
+			const mongooseResolver = ModelTC.mongooseResolvers[mongooseResolverName];
+
+			if (mongooseResolver().hasArg("sort") === false) continue;
+
+			ModelTC.mongooseResolvers[mongooseResolverName] = (opts) =>
+				mongooseResolver(opts)
+					.removeArg("sort")
+					.addArgs({
+						sort: {
+							type: GraphQLJSON,
+						},
+					})
+					.wrapResolve((next) => ({ args, beforeQuery, ...other }) => {
+						beforeQuery = (query) => {
+							if (args.sort) query.sort(args.sort);
+						};
+						return next({ args, beforeQuery, ...other });
+					});
+		}
+	}
+
+	__replaceDateByModelTC(ModelTC = required`ModelTC`) {
+		ModelTC.getFieldNames()
+			.filter((name) => ModelTC.getFieldTypeName(name) === "Date")
+			.forEach((name) => {
+				ModelTC.setField(
+					name,
+					ScalarTypeComposer.create(DateTimeTypeDefinition, this.schemaComposer)
+				);
+			});
+	}
+
+	__replaceDate() {
+		function replace(TC, schemaComposer) {
+			for (const name of TC.getFieldNames()) {
+				if (TC.getFieldTypeName(name) === "Date") {
+					TC.setField(
+						name,
+						ScalarTypeComposer.create(DateTimeTypeDefinition, schemaComposer)
+					);
+				} else if (TC.getFieldTypeName(name) === "[Date]") {
+					TC.setField(name, [
+						ScalarTypeComposer.create(DateTimeTypeDefinition, schemaComposer),
+					]);
+				} else {
+					const nextTC = TC.getFieldTC(name);
+					if (nextTC === TC) continue;
+					if (!isSomeInputTypeComposer(nextTC)) continue;
+					if (!nextTC.getFieldNames) continue;
+					if (!nextTC.getFieldTypeName) continue;
+					replace(nextTC, schemaComposer);
+				}
+			}
+		}
+
+		const OTCTypes = ["Query", "Mutation"];
+		for (const OTCType of OTCTypes) {
+			const OTC = this.schemaComposer[OTCType];
+			for (const name of OTC.getFieldNames()) {
+				if (name === "_empty") continue;
+				const fieldArgNames = OTC.getFieldArgNames(name);
+				for (const fieldArgName of fieldArgNames) {
+					const TC = OTC.getFieldArgTC(name, fieldArgName);
+					if (!TC.getFieldNames) continue;
+					if (!TC.getFieldTypeName) continue;
+					replace(TC, this.schemaComposer);
+				}
+			}
+		}
+	}
+
+	__seedTypesFromModels($ = required`$`) {
+		return Object.keys($).map((name) => {
+			const { ucFirstSingular } = this.SchemaNameHelper.parseName(name);
+
+			const ModelTC = composeMongoose($[name], {
+				name: ucFirstSingular,
+				schemaComposer: this.schemaComposer,
+			});
+
+			this.__replaceSort(ModelTC);
+			this.__replaceDateByModelTC(ModelTC);
+
+			for (const extension of this.meta.extensions) {
+				ModelTC.mongooseResolvers[extension.name] = extension.value(ModelTC);
+			}
+		});
+	}
+
+	__alphabetizeFields() {
+		this.schemaComposer.types.forEach((val) => {
+			if (!val.getFieldNames) return;
+			const typeFieldNames = val.getFieldNames();
+			typeFieldNames.sort(function (a, b) {
+				if (a < b) {
+					return -1;
+				}
+				if (a > b) {
+					return 1;
+				}
+				return 0;
+			});
+			val.reorderFields(typeFieldNames);
+		});
+	}
+
+	generate($ = required`$`) {
+		if (this.value) return this.value;
+
+		this.__seedTypesFromModels($);
+		this.__addOperationsFromModels($);
+
+		this.__replaceDate();
+
+		this.SchemaRelationHelper.addRelationsFromModels($);
+		if (NODE_ENV !== "production") {
+			this.SchemaDescriptionHelper.addDescriptions();
+			this.__alphabetizeFields();
+		}
+
+		this.value = this.schemaComposer.buildSchema({
+			keepUnusedTypes: false,
+			types: this.SchemaInterfaceTypeHelper.getInterfaceImplementations(),
+		});
+		this.value = this.__addDirectives(this.value);
+
+		return applyMiddleware(
+			this.value,
+			this.SchemaMiddlewareHelper.generateMiddleware()
+			//this.SchemaPermissionHelper.generateShieldPermissions()
+		);
+	}
+}
+
+export default Schema;

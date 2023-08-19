@@ -1,0 +1,19 @@
+{
+	"comments": false,
+	"plugins": [
+		"source-map-support",
+		"@babel/plugin-proposal-class-properties",
+		"@babel/plugin-proposal-throw-expressions"
+	],
+	"sourceType": "unambiguous",
+	"presets": [
+		[
+			"@babel/preset-env",
+			{
+				"targets": {
+					"node": "12"
+				}
+			}
+		]
+	]
+}

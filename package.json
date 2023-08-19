@@ -1,0 +1,40 @@
+{
+	"name": "@graphnosql/mongoose",
+	"version": "0.0.1",
+	"main": "dist/index.js",
+	"scripts": {
+		"rm:build": "rm -rf ./.webpack",
+		"build": "npm run rm:build && NODE_ENV=development webpack --config webpack.config.js --progress",
+		"build:prod": "NODE_ENV=production webpack",
+		"release:patch": "np patch --any-branch --no-2fa --branch master --no-publish --no-release-draft",
+		"release:minor": "np minor --no-2fa --any-branch --branch master --no-publish --no-release-draft",
+		"release:major": "np major --no-2fa --any-branch --branch master --no-publish --no-release-draft"
+	},
+	"author": "Mac Lara",
+	"license": "ISC",
+	"dependencies": {
+		"debug": "^4.1.1",
+		"dot-object": "^2.1.4",
+		"graphql": "^15.5.3",
+		"graphql-compose": "^9.0.4",
+		"graphql-compose-mongoose": "^9.7.0",
+		"graphql-middleware": "^6.1.12",
+		"graphql-scalars": "^1.10.1",
+		"graphql-shield": "^7.5.0",
+		"graphql-type-json": "^0.3.2"
+	},
+	"devDependencies": {
+		"@babel/core": "^7.9.6",
+		"@babel/plugin-proposal-class-properties": "^7.8.3",
+		"@babel/plugin-proposal-throw-expressions": "^7.8.3",
+		"@babel/preset-env": "^7.9.6",
+		"@babel/register": "^7.9.0",
+		"@graphql-cli/generate": "^4.1.0",
+		"babel-loader": "^8.1.0",
+		"babel-plugin-source-map-support": "^2.1.1",
+		"mongoose": "^7.4.3",
+		"webpack": "^5.57.1",
+		"webpack-cli": "^4.8.0",
+		"webpack-node-externals": "^3.0.0"
+	}
+}
