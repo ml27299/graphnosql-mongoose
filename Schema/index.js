@@ -215,9 +215,11 @@ class Schema {
 			this.__alphabetizeFields();
 		}
 
+		const interfaceTypes =
+			this.SchemaInterfaceTypeHelper.getInterfaceImplementations();
 		this.value = this.schemaComposer.buildSchema({
 			keepUnusedTypes: false,
-			types: this.SchemaInterfaceTypeHelper.getInterfaceImplementations(),
+			types: interfaceTypes.length > 0 ? interfaceTypes : undefined,
 		});
 		this.value = this.__addDirectives(this.value);
 
