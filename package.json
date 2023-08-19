@@ -1,6 +1,6 @@
 {
 	"name": "@graphnosql/mongoose",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"main": "dist/index.js",
 	"scripts": {
 		"rm:build": "rm -rf ./.webpack",
@@ -11,7 +11,7 @@
 		"release:major": "np major --no-2fa --any-branch --branch master --no-publish --no-release-draft"
 	},
 	"peerDependencies": {
-		"graphql-compose": "^7.21.4 || ^8.0.0 || ^9.0.0",
+		"graphql-compose": "^9.0.0",
 		"mongoose": "^7.0.0 || ^6.0.0 || ^5.0.0 || ^4.4.0"
 	},
 	"author": "Mac Lara",
