@@ -66,10 +66,15 @@ class Schema {
 		this.SchemaInterfaceTypeHelper = new SchemaInterfaceTypeHelper(this);
 	}
 
+	__defineDirectives() {
+		this.SchemaDirectiveHelper.directives.forEach(({ definition }) => {
+			this.schemaComposer.addDirective(definition);
+		});
+	}
+
 	__addDirectives(schema = required`schema`) {
 		this.SchemaDirectiveHelper.directives.forEach(
 			({ transformer, definition, name }) => {
-				schema.addDirective(definition);
 				schema = transformer(schema, name);
 			}
 		);
@@ -212,6 +217,7 @@ class Schema {
 		this.__seedTypesFromModels($);
 		this.__addOperationsFromModels($);
 
+		this.__defineDirectives();
 		this.__replaceDate();
 
 		this.SchemaRelationHelper.addRelationsFromModels($);
