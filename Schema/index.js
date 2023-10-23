@@ -97,10 +97,11 @@ class Schema {
 		for (const mongooseResolverName in ModelTC.mongooseResolvers) {
 			const mongooseResolver = ModelTC.mongooseResolvers[mongooseResolverName];
 
-			if (mongooseResolver().hasArg("sort") === false) continue;
+			ModelTC.mongooseResolvers[mongooseResolverName] = (opts) => {
+				const mR = mongooseResolver(opts);
+				if (mR.hasArg("sort") === false) return mR;
 
-			ModelTC.mongooseResolvers[mongooseResolverName] = (opts) =>
-				mongooseResolver(opts)
+				return mR
 					.removeArg("sort")
 					.addArgs({
 						sort: {
@@ -113,6 +114,7 @@ class Schema {
 						};
 						return next({ args, beforeQuery, ...other });
 					});
+			};
 		}
 	}
 
