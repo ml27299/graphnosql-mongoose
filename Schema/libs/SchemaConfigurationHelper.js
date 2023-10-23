@@ -33,6 +33,15 @@ class SchemaConfigurationHelper {
 	 * opts[Object]: options for the mongoose resolver
 	 */
 	get defaultConfigurationFnTypeMap() {
+		const operatorsFilterConfig = (indexes) => {
+			return indexes.reduce((result, obj) => {
+				Object.keys(obj).forEach((key) => {
+					result = Object.assign({}, { [key]: true }, result);
+				});
+
+				return dot.object(result);
+			}, {});
+		};
 		const fnTypes = [
 			{
 				value: "findMany",
@@ -43,7 +52,10 @@ class SchemaConfigurationHelper {
 				suffix: false,
 				singular: false,
 				removeArgs: [],
-				opts: { filter: { onlyIndexed: false }, sort: { multi: true } },
+				opts: {
+					filter: { onlyIndexed: false, operators: operatorsFilterConfig },
+					sort: { multi: true },
+				},
 			},
 			{
 				value: "findByIds",
@@ -76,7 +88,9 @@ class SchemaConfigurationHelper {
 				suffix: false,
 				singular: false,
 				removeArgs: [],
-				opts: { filter: { onlyIndexed: false } },
+				opts: {
+					filter: { onlyIndexed: false, operators: operatorsFilterConfig },
+				},
 			},
 			{
 				value: "dataLoaderMany",
@@ -109,7 +123,10 @@ class SchemaConfigurationHelper {
 				suffix: false,
 				singular: false,
 				removeArgs: [],
-				opts: { filter: { onlyIndexed: false }, sort: { multi: true } },
+				opts: {
+					filter: { onlyIndexed: false, operators: operatorsFilterConfig },
+					sort: { multi: true },
+				},
 			},
 			{
 				value: "removeMany",
@@ -120,7 +137,10 @@ class SchemaConfigurationHelper {
 				suffix: false,
 				singular: false,
 				removeArgs: [],
-				opts: { filter: { onlyIndexed: false }, sort: { multi: true } },
+				opts: {
+					filter: { onlyIndexed: false, operators: operatorsFilterConfig },
+					sort: { multi: true },
+				},
 			},
 			{
 				value: "findOne",
@@ -131,7 +151,13 @@ class SchemaConfigurationHelper {
 				suffix: false,
 				singular: true,
 				removeArgs: [],
-				opts: { filter: { onlyIndexed: false }, sort: { multi: true } },
+				opts: {
+					filter: {
+						onlyIndexed: false,
+						operators: operatorsFilterConfig,
+					},
+					sort: { multi: true },
+				},
 			},
 			{
 				value: "findById",
@@ -175,7 +201,10 @@ class SchemaConfigurationHelper {
 				suffix: false,
 				singular: true,
 				removeArgs: [],
-				opts: { filter: { onlyIndexed: false }, sort: { multi: true } },
+				opts: {
+					filter: { onlyIndexed: false, operators: operatorsFilterConfig },
+					sort: { multi: true },
+				},
 			},
 			{
 				value: "updateMany",
@@ -186,7 +215,10 @@ class SchemaConfigurationHelper {
 				suffix: false,
 				singular: false,
 				removeArgs: [],
-				opts: { filter: { onlyIndexed: false }, sort: { multi: true } },
+				opts: {
+					filter: { onlyIndexed: false, operators: operatorsFilterConfig },
+					sort: { multi: true },
+				},
 			},
 			{
 				value: "removeOne",
@@ -197,7 +229,10 @@ class SchemaConfigurationHelper {
 				suffix: false,
 				singular: true,
 				removeArgs: [],
-				opts: { filter: { onlyIndexed: false }, sort: { multi: true } },
+				opts: {
+					filter: { onlyIndexed: false, operators: operatorsFilterConfig },
+					sort: { multi: true },
+				},
 			},
 			{
 				value: "updateById",
@@ -382,7 +417,7 @@ class SchemaConfigurationHelper {
 		);
 	}
 
-	getConfigurationByName(name = required`name`) {
+	getConfigurationByName(name = required`name`, Model = required`Model`) {
 		const configurationObj = this.configurations.find(
 			(configuration) => configuration.name === name.toLowerCase()
 		);
@@ -391,16 +426,23 @@ class SchemaConfigurationHelper {
 		if (!configuration) return;
 
 		for (const fnType in configuration) {
-			if (Array.isArray(configuration[fnType]) === false)
+			const configMap = this.defaultConfigurationFnTypeMap[fnType];
+			if (configMap.opts?.filter?.operators)
+				configMap.opts.filter.operators = configMap.opts.filter.operators(
+					Model.schema.indexes().map((index) => index[0])
+				);
+			//console.log(configMap.opts?.filter?.operators);
+			if (Array.isArray(configuration[fnType]) === false) {
 				configuration[fnType] = Object.assign(
 					{},
-					this.defaultConfigurationFnTypeMap[fnType],
+					configMap,
 					configuration[fnType]
 				);
-			else
+			} else {
 				configuration[fnType] = configuration[fnType].map((config) =>
-					Object.assign({}, this.defaultConfigurationFnTypeMap[fnType], config)
+					Object.assign({}, configMap, config)
 				);
+			}
 		}
 
 		return configuration;
