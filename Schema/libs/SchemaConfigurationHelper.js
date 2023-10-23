@@ -1,4 +1,5 @@
 import required from "../../libs/required";
+import dot from "dot-object";
 
 class SchemaConfigurationHelper {
 	singleton;
