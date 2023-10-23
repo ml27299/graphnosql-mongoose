@@ -68,7 +68,10 @@ class Schema {
 
 	__addDirectives(schema = required`schema`) {
 		this.SchemaDirectiveHelper.directives.forEach(
-			({ transformer, name }) => (schema = transformer(schema, name))
+			({ transformer, definition, name }) => {
+				schema.addDirective(definition);
+				schema = transformer(schema, name);
+			}
 		);
 		return schema;
 	}
