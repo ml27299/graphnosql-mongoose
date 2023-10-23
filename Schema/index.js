@@ -78,7 +78,7 @@ class Schema {
 			const { ucFirstSingular } = this.SchemaNameHelper.parseName(name);
 			const ModelTC = this.schemaComposer.getOTC(ucFirstSingular);
 			const configuration =
-				this.SchemaConfigurationHelper.getConfigurationByName(name);
+				this.SchemaConfigurationHelper.getConfigurationByName(name, $[name]);
 
 			if (!ModelTC || !configuration) return;
 
