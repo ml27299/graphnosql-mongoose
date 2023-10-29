@@ -292,7 +292,7 @@ class Schema {
 		if (!this.value._queryType) delete middleware.Query;
 		return applyMiddleware(
 			this.value,
-			this.SchemaMiddlewareHelper.generateMiddleware()
+			middleware
 			//this.SchemaPermissionHelper.generateShieldPermissions()
 		);
 	}
