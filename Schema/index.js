@@ -1,4 +1,5 @@
 import { composeMongoose } from "graphql-compose-mongoose";
+import { print } from "graphql";
 
 import {
 	SchemaComposer,
@@ -38,7 +39,15 @@ class Schema {
 		descriptions = [],
 		overrides = [],
 		extensions = [],
+		definitions = [],
+		mutations = [],
+		queries = [],
+		resolvers = [],
 	}) {
+		this.definitions = definitions;
+		this.mutations = mutations;
+		this.queries = queries;
+		this.resolvers = resolvers;
 		this.meta = {
 			directives,
 			unions,
@@ -64,6 +73,35 @@ class Schema {
 		this.SchemaUnionTypeHelper = new SchemaUnionTypeHelper(this);
 		this.SchemaOverridesHelper = new SchemaOverridesHelper(this);
 		this.SchemaInterfaceTypeHelper = new SchemaInterfaceTypeHelper(this);
+	}
+
+	__defineCustomOperations() {
+		const Query = this.queries.reduce((result, query) => {
+			return Object.assign({}, result, {
+				[query.name]: query.value,
+			});
+		}, {});
+
+		const Mutation = this.mutations.reduce((result, mutation) => {
+			return Object.assign({}, result, {
+				[mutation.name]: mutation.value,
+			});
+		}, {});
+
+		const Resolver = this.resolvers.reduce((result, resolver) => {
+			const targetType = resolver.name.split(".")[0];
+			const field = resolver.name.split(".")[1];
+			if (!result[targetType]) result[targetType] = {};
+			if (field) result[targetType][field] = resolver.value;
+			else result[targetType] = resolver.value;
+			return result;
+		}, {});
+
+		this.schemaComposer.addResolveMethods({
+			Query,
+			Mutation,
+			...Resolver,
+		});
 	}
 
 	__defineDirectives() {
@@ -211,11 +249,27 @@ class Schema {
 		});
 	}
 
+	addScalers(scalars = required`scalars`) {
+		this.schemaComposer.addResolveMethods({
+			...scalars,
+		});
+	}
+
 	generate($ = required`$`) {
 		if (this.value) return this.value;
 
 		this.__seedTypesFromModels($);
 		this.__addOperationsFromModels($);
+
+		this.definitions.forEach((definition) => {
+			this.schemaComposer.addTypeDefs(print(definition));
+		});
+		this.SchemaInterfaceTypeHelper.extendInterfaceImplementationTypeResolvers();
+
+		this.__defineCustomOperations();
+
+		this.SchemaUnionTypeHelper.addResolveTypeToUnionTypes();
+		this.SchemaInterfaceTypeHelper.addResolveTypeToInterfaceTypes();
 
 		this.__defineDirectives();
 		this.__replaceDate();

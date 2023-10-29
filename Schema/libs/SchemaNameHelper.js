@@ -3,7 +3,7 @@ import pluralize from "pluralize";
 
 class SchemaNameHelper {
 	singleton;
-	ext = "V2";
+	ext = "";
 
 	constructor(singleton) {
 		this.singleton = singleton;
