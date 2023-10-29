@@ -12,11 +12,15 @@ export default class SchemaOverridesHelper {
 	}
 
 	get queryWrapResolver() {
-		return queryWrapResolver;
+		return this.meta.extensions?.find(
+			({ name }) => name === "queryWrapResolver"
+		)?.value;
 	}
 
 	get mutationWrapResolver() {
-		return mutationWrapResolver;
+		return this.meta.extensions?.find(
+			({ name }) => name === "mutationWrapResolver"
+		)?.value;
 	}
 
 	findByName(name = required`name`) {

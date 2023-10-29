@@ -19,7 +19,7 @@ class SchemaFieldHelper {
 				fnTypeConfig
 			);
 
-			const { value: overrideResolver, wrapper } =
+			const overrideResolver =
 				this.singleton.SchemaOverridesHelper.findByName(name) || {};
 
 			if (overrideResolver) {
@@ -28,11 +28,15 @@ class SchemaFieldHelper {
 					({ source, args, context, info }) => {
 						return next(source, args, context, info);
 					};
-				if (wrapper) {
+				if (pk) {
+					const { queryWrapResolver, mutationWrapResolver } =
+						this.singleton.SchemaOverridesHelper;
+					const wrapResolver =
+						type === "query" ? queryWrapResolver : mutationWrapResolver;
 					mongooseFn = mongooseFn
 						.setResolve(overrideResolver)
 						.wrapResolve(firstWrapResolve)
-						.wrapResolve(wrapper(fnTypeConfig));
+						.wrapResolve(wrapResolver(fnTypeConfig));
 				} else {
 					mongooseFn = mongooseFn
 						.setResolve(overrideResolver)
