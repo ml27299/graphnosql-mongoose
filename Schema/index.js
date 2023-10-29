@@ -287,7 +287,9 @@ class Schema {
 			types: interfaceTypes.length > 0 ? interfaceTypes : undefined,
 		});
 		this.value = this.__addDirectives(this.value);
-
+		const middleware = this.SchemaMiddlewareHelper.generateMiddleware();
+		if (!this.value._mutationType) delete middleware.Mutation;
+		if (!this.value._queryType) delete middleware.Query;
 		return applyMiddleware(
 			this.value,
 			this.SchemaMiddlewareHelper.generateMiddleware()
