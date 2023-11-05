@@ -265,6 +265,8 @@ class Schema {
 		this.__seedTypesFromModels($);
 		this.__addOperationsFromModels($);
 
+		this.__defineDirectives();
+
 		this.definitions.forEach((definition) => {
 			this.schemaComposer.addTypeDefs(print(definition));
 		});
@@ -275,7 +277,6 @@ class Schema {
 		this.SchemaUnionTypeHelper.addResolveTypeToUnionTypes();
 		this.SchemaInterfaceTypeHelper.addResolveTypeToInterfaceTypes();
 
-		this.__defineDirectives();
 		this.__replaceDate();
 
 		this.SchemaRelationHelper.addRelationsFromModels($);
