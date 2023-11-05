@@ -251,7 +251,7 @@ class Schema {
 
 	addScalers(scalars = required`scalars`) {
 		Object.keys(scalars).forEach((name) => {
-			this.schemaComposer.addTypeDefs(print(`scalar ${name}`));
+			this.schemaComposer.addTypeDefs(`scalar ${name}`);
 		});
 
 		this.schemaComposer.addResolveMethods({
