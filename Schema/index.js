@@ -1,3 +1,4 @@
+import * as path from "path";
 import { composeMongoose } from "graphql-compose-mongoose";
 import { print } from "graphql";
 
@@ -259,7 +260,7 @@ class Schema {
 		});
 	}
 
-	generate($ = required`$`) {
+	generate($ = required`$`, markup) {
 		if (this.value) return this.value;
 
 		this.__seedTypesFromModels($);
@@ -287,6 +288,47 @@ class Schema {
 
 		const interfaceTypes =
 			this.SchemaInterfaceTypeHelper.getInterfaceImplementations();
+
+		if (markup) {
+			const queryOutputFilePath =
+				markup.queryOutputFilePath || path.resolve("./Query.json");
+			const mutationOutputFilePath =
+				markup.mutationOutputFilePath || path.resolve("./Mutation.json");
+
+			for (const key of ["Query", "Mutation"]) {
+				const response = [];
+				const operationNames = this.schemaComposer[key].getFieldNames();
+				for (const operationName of operationNames) {
+					const obj = { name: operationName, args: [] };
+					const argNames =
+						this.schemaComposer[key].getFieldArgNames(operationName);
+					for (const argName of argNames) {
+						const argTypeName = this.schemaComposer[key].getFieldArgTypeName(
+							operationName,
+							argName
+						);
+						obj.args.push({
+							name: argName,
+							type: argTypeName,
+						});
+					}
+					response.push(obj);
+				}
+				if (key === "Query") {
+					require("fs").writeFileSync(
+						queryOutputFilePath,
+						JSON.stringify(response, null, 2)
+					);
+				}
+				if (key === "Mutation") {
+					require("fs").writeFileSync(
+						mutationOutputFilePath,
+						JSON.stringify(response, null, 2)
+					);
+				}
+			}
+		}
+
 		this.value = this.schemaComposer.buildSchema({
 			keepUnusedTypes: false,
 			types: interfaceTypes.length > 0 ? interfaceTypes : undefined,
