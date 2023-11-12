@@ -303,7 +303,7 @@ class Schema {
 
 		const jsFileStr = `
 			export default {
-				${filePaths.forEach(
+				${filePaths.map(
 					({ operationName, filePath }) =>
 						`${operationName}: () => import("${filePath}")\n`
 				)}
