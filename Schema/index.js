@@ -1,6 +1,7 @@
 import * as path from "path";
 import { composeMongoose } from "graphql-compose-mongoose";
 import { print } from "graphql";
+import { mkdirSync, writeFileSync, existsSync } from "fs";
 
 import {
 	SchemaComposer,
@@ -260,7 +261,59 @@ class Schema {
 		});
 	}
 
-	generate($ = required`$`, markup) {
+	markup({ outputPath } = {}) {
+		if (!outputPath) outputPath = path.resolve("markup");
+		const queriesOutputPath = path.resolve(outputPath, "queries");
+		const mutationsOutputPath = path.resolve(outputPath, "mutations");
+
+		if (!existsSync(outputPath)) mkdirSync(outputPath);
+		if (!existsSync(queriesOutputPath)) mkdirSync(queriesOutputPath);
+		if (!existsSync(mutationsOutputPath)) mkdirSync(mutationsOutputPath);
+
+		const filePaths = [];
+		for (const key of ["Query", "Mutation"]) {
+			const operationNames = this.schemaComposer[key].getFieldNames();
+			for (const operationName of operationNames) {
+				const obj = { name: operationName, args: [] };
+				const argNames =
+					this.schemaComposer[key].getFieldArgNames(operationName);
+				for (const argName of argNames) {
+					const argTypeName = this.schemaComposer[key].getFieldArgTypeName(
+						operationName,
+						argName
+					);
+					obj.args.push({
+						name: argName,
+						type: argTypeName,
+					});
+				}
+				if (key === "Query") {
+					var filePath = `${queriesOutputPath}/${operationName}.json`;
+				}
+				if (key === "Mutation") {
+					var filePath = `${mutationsOutputPath}/${operationName}.json`;
+				}
+				writeFileSync(filePath, JSON.stringify(obj, null, 2));
+				filePaths.push({
+					operationName,
+					filePath: filePath.replace(outputPath, "."),
+				});
+			}
+		}
+
+		const jsFileStr = `
+			export default {
+				${filePaths.forEach(
+					({ operationName, filePath }) =>
+						`${operationName}: () => import("${filePath}")\n`
+				)}
+			}
+		`;
+
+		writeFileSync(`${outputPath}/index.js`, jsFileStr);
+	}
+
+	generate($ = required`$`) {
 		if (this.value) return this.value;
 
 		this.__seedTypesFromModels($);
@@ -288,53 +341,6 @@ class Schema {
 
 		const interfaceTypes =
 			this.SchemaInterfaceTypeHelper.getInterfaceImplementations();
-
-		if (markup) {
-			let queryOutputFilePath =
-				markup.queryOutputFilePath || path.resolve("./Query.json");
-			if (path.parse(queryOutputFilePath).ext !== ".json")
-				queryOutputFilePath = path.resolve(queryOutputFilePath, "./Query.json");
-			let mutationOutputFilePath =
-				markup.mutationOutputFilePath || path.resolve("./Mutation.json");
-			if (path.parse(mutationOutputFilePath).ext !== ".json")
-				mutationOutputFilePath = path.resolve(
-					mutationOutputFilePath,
-					"./Mutation.json"
-				);
-
-			for (const key of ["Query", "Mutation"]) {
-				const response = [];
-				const operationNames = this.schemaComposer[key].getFieldNames();
-				for (const operationName of operationNames) {
-					const obj = { name: operationName, args: [] };
-					const argNames =
-						this.schemaComposer[key].getFieldArgNames(operationName);
-					for (const argName of argNames) {
-						const argTypeName = this.schemaComposer[key].getFieldArgTypeName(
-							operationName,
-							argName
-						);
-						obj.args.push({
-							name: argName,
-							type: argTypeName,
-						});
-					}
-					response.push(obj);
-				}
-				if (key === "Query") {
-					require("fs").writeFileSync(
-						queryOutputFilePath,
-						JSON.stringify(response, null, 2)
-					);
-				}
-				if (key === "Mutation") {
-					require("fs").writeFileSync(
-						mutationOutputFilePath,
-						JSON.stringify(response, null, 2)
-					);
-				}
-			}
-		}
 
 		this.value = this.schemaComposer.buildSchema({
 			keepUnusedTypes: false,
