@@ -290,10 +290,17 @@ class Schema {
 			this.SchemaInterfaceTypeHelper.getInterfaceImplementations();
 
 		if (markup) {
-			const queryOutputFilePath =
+			let queryOutputFilePath =
 				markup.queryOutputFilePath || path.resolve("./Query.json");
-			const mutationOutputFilePath =
+			if (path.parse(queryOutputFilePath).ext !== ".json")
+				queryOutputFilePath = path.resolve(queryOutputFilePath, "./Query.json");
+			let mutationOutputFilePath =
 				markup.mutationOutputFilePath || path.resolve("./Mutation.json");
+			if (path.parse(mutationOutputFilePath).ext !== ".json")
+				mutationOutputFilePath = path.resolve(
+					mutationOutputFilePath,
+					"./Mutation.json"
+				);
 
 			for (const key of ["Query", "Mutation"]) {
 				const response = [];
