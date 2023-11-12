@@ -303,10 +303,12 @@ class Schema {
 
 		const jsFileStr = `
 			export default {
-				${filePaths.map(
-					({ operationName, filePath }) =>
-						`${operationName}: () => import("${filePath}")\n`
-				)}
+				${filePaths
+					.sort((a, b) => a.operationName - b.operationName)
+					.map(
+						({ operationName, filePath }) =>
+							`\n${operationName}: () => import("${filePath}")\r`
+					)}
 			}
 		`;
 
