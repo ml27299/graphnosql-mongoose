@@ -20,7 +20,7 @@ class SchemaFieldHelper {
 			);
 
 			const overrideResolver =
-				this.singleton.SchemaOverridesHelper.findByName(name) || {};
+				this.singleton.SchemaOverridesHelper.findByName(name);
 
 			if (overrideResolver) {
 				const firstWrapResolve =
