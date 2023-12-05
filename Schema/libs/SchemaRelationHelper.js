@@ -34,7 +34,9 @@ class SchemaRelationHelper {
 			.map(({ type, path }) => {
 				return Object.keys(type.schema.paths)
 					.filter((key) => type.schema.paths[key].options.ref)
-					.filter((key) => type.schema.paths[key].instance === "Array")
+					.filter(
+						(key) => type.schema.paths[key].instance.toLowerCase() === "array"
+					)
 					.map((key) => ({
 						path: `${path}.${type.schema.paths[key].path}`,
 						type: { options: type.schema.paths[key].options },
@@ -47,7 +49,10 @@ class SchemaRelationHelper {
 			.map(({ type, path }) => {
 				return Object.keys(type.schema.paths)
 					.filter((key) => type.schema.paths[key].options.ref)
-					.filter((key) => type.schema.paths[key].instance === "ObjectID")
+					.filter(
+						(key) =>
+							type.schema.paths[key].instance.toLowerCase() === "objectid"
+					)
 					.map((key) => ({
 						path: `${path}.${type.schema.paths[key].path}`,
 						type: { options: type.schema.paths[key].options },
@@ -57,10 +62,10 @@ class SchemaRelationHelper {
 
 		const relations = schemaTypes.filter(({ type }) => !!type.options.ref);
 		const oneToManyRelations = relations
-			.filter((relation) => relation.type.instance === "Array")
+			.filter((relation) => relation.type.instance.toLowerCase() === "array")
 			.concat(oneToManyNestedRelations);
 		const oneToOneRelations = relations
-			.filter((relation) => relation.type.instance === "ObjectID")
+			.filter((relation) => relation.type.instance.toLowerCase() === "objectid")
 			.concat(oneToOneNestedRelations);
 
 		// if (Model.modelName === "providers")
