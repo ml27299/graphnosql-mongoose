@@ -171,7 +171,9 @@ class Schema {
 			.filter(
 				(name) =>
 					ModelTC.getFieldTypeName(name) === "Date" ||
-					ModelTC.getFieldTypeName(name) === "Date!"
+					ModelTC.getFieldTypeName(name) === "Date!" ||
+					ModelTC.getFieldTypeName(name) === "[Date]" ||
+					ModelTC.getFieldTypeName(name) === "[Date!]"
 			)
 			.forEach((name) => {
 				ModelTC.setField(
