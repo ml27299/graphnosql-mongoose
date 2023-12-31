@@ -168,7 +168,11 @@ class Schema {
 
 	__replaceDateByModelTC(ModelTC = required`ModelTC`) {
 		ModelTC.getFieldNames()
-			.filter((name) => ModelTC.getFieldTypeName(name) === "Date")
+			.filter(
+				(name) =>
+					ModelTC.getFieldTypeName(name) === "Date" ||
+					ModelTC.getFieldTypeName(name) === "Date!"
+			)
 			.forEach((name) => {
 				ModelTC.setField(
 					name,
@@ -180,12 +184,18 @@ class Schema {
 	__replaceDate() {
 		function replace(TC, schemaComposer) {
 			for (const name of TC.getFieldNames()) {
-				if (TC.getFieldTypeName(name) === "Date") {
+				if (
+					TC.getFieldTypeName(name) === "Date" ||
+					TC.getFieldTypeName(name) === "Date!"
+				) {
 					TC.setField(
 						name,
 						ScalarTypeComposer.create(DateTimeTypeDefinition, schemaComposer)
 					);
-				} else if (TC.getFieldTypeName(name) === "[Date]") {
+				} else if (
+					TC.getFieldTypeName(name) === "[Date]" ||
+					TC.getFieldTypeName(name) === "[Date!]"
+				) {
 					TC.setField(name, [
 						ScalarTypeComposer.create(DateTimeTypeDefinition, schemaComposer),
 					]);
