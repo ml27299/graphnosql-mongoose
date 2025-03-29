@@ -1,6 +1,6 @@
 {
 	"name": "@graphnosql/mongoose",
-	"version": "0.3.25",
+	"version": "0.3.26",
 	"main": "dist/index.js",
 	"scripts": {
 		"rm:build": "rm -rf ./.webpack",
@@ -12,7 +12,7 @@
 	},
 	"peerDependencies": {
 		"graphql-compose": "^9.0.0",
-		"mongoose": "^7.0.0 || ^6.0.0 || ^5.0.0 || ^4.4.0"
+		"mongoose": ">=4.4.0"
 	},
 	"overrides": {
 		"graphql-compose": "^9.0.4"
