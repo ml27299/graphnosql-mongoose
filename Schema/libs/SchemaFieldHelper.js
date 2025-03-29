@@ -1,5 +1,19 @@
 import required from "../../libs/required";
-
+import { GraphQLEnumType } from "graphql";
+const Mode = new GraphQLEnumType({
+	name: `EnumMode`,
+	values: {
+		set: {
+			value: "set",
+			description:
+				"This mode will dot the record so that objects don't get overwritten, only the fields that are specified will be updated.",
+		},
+		classic: {
+			value: "classic",
+			description: "This mode will overwrite the record with the new record.",
+		},
+	},
+});
 class SchemaFieldHelper {
 	singleton;
 
@@ -17,8 +31,38 @@ class SchemaFieldHelper {
 			let mongooseFn = ModelTC.mongooseResolvers[mongooseFnType](
 				opts,
 				fnTypeConfig
-			);
-
+			).wrapResolve((next) => (rp) => {
+				if (!rp.projection) rp.projection = { "*": true };
+				else if (rp.projection["*"] === undefined) rp.projection["*"] = true;
+				return next(rp);
+			});
+			const supportedSingularModeResolvers = ["updateOne", "updateById"];
+			const supportedPluralModeResolvers = ["updateMany"];
+			const supportedModeResolvers = [
+				...supportedSingularModeResolvers,
+				...supportedPluralModeResolvers,
+			];
+			if (supportedModeResolvers.includes(mongooseFnType)) {
+				mongooseFn.addArgs({
+					mode: {
+						type: Mode,
+						defaultValue: "set",
+					},
+				});
+				mongooseFn = mongooseFn.wrapResolve((next) => ({ args, ...rest }) => {
+					const { mode } = args;
+					if (mode === "set") {
+						dot.keepArray = true;
+						if (supportedPluralModeResolvers.includes(mongooseFnType)) {
+							args.records = args.records.map((record) => dot.dot(record));
+						} else {
+							args.record = dot.dot(args.record);
+						}
+						dot.keepArray = false;
+					}
+					return next({ args, ...rest });
+				});
+			}
 			const overrideResolver =
 				this.singleton.SchemaOverridesHelper.findByName(name);
 
