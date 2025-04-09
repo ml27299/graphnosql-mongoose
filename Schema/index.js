@@ -366,8 +366,8 @@ class Schema {
 		if (!this.value._queryType) delete middleware.Query;
 		return applyMiddleware(
 			this.value,
-			middleware
-			//this.SchemaPermissionHelper.generateShieldPermissions()
+			middleware,
+			this.SchemaPermissionHelper.generateShieldPermissions()
 		);
 	}
 }
