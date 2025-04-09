@@ -29,6 +29,7 @@
 		"graphql-scalars": "^1.10.1",
 		"graphql-shield": "^7.5.0",
 		"graphql-type-json": "^0.3.2",
+		"jsonwebtoken": "^9.0.2",
 		"pluralize": "^8.0.0"
 	},
 	"devDependencies": {

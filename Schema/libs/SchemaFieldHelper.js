@@ -1,4 +1,5 @@
 import required from "../../libs/required";
+import jwt from "jsonwebtoken";
 import { GraphQLEnumType } from "graphql";
 const Mode = new GraphQLEnumType({
 	name: `EnumMode`,
@@ -14,6 +15,92 @@ const Mode = new GraphQLEnumType({
 		},
 	},
 });
+
+const queryWrapResolver =
+	(fnTypeConfig) =>
+	(next) =>
+	({ args, context, ...other }) => {
+		const token = context.getToken();
+		if (!token) return false;
+
+		const payload = jwt.decode(token);
+		const { pk, tk } = fnTypeConfig || {};
+
+		function setArg(name, args) {
+			if (Array.isArray(pk) && Array.isArray(tk)) {
+				let supportedPks = [];
+				for (const key of pk) {
+					if (!args["pk"][key]) continue;
+					supportedPks.push(key);
+				}
+				if (supportedPks.length === 0) {
+					throw new Error(`No supported PKs found for ${name}`);
+				}
+				supportedPks.forEach((key, index) => {
+					const v = dot.pick(tk[index], payload);
+					if (v === undefined) return;
+					args[name][key] = v;
+				});
+			} else {
+				args[name][pk] = dot.pick(tk, payload);
+			}
+		}
+
+		if (!args["filter"]) args["filter"] = {};
+		setArg("filter", args);
+
+		dot.object(args);
+
+		return next({ args, context, ...other });
+	};
+
+const mutationWrapResolver =
+	(fnTypeConfig) =>
+	(next) =>
+	({ args, context, ...other }) => {
+		const token = context.getToken();
+		if (!token) return false;
+
+		const payload = jwt.decode(token);
+		const { pk, tk } = fnTypeConfig || {};
+
+		function setArg(name, args) {
+			if (name && Array.isArray(args[name])) {
+				args[name].forEach((record) => {
+					setArg(null, record);
+				});
+				return;
+			}
+			if (Array.isArray(pk) && Array.isArray(tk)) {
+				let supportedPks = [];
+				for (const key of pk) {
+					if (!args["pk"][key]) continue;
+					supportedPks.push(key);
+				}
+				if (supportedPks.length === 0) {
+					throw new Error(`No supported PKs found for ${name}`);
+				}
+				supportedPks.forEach((key, index) => {
+					const v = dot.pick(tk[index], payload);
+					if (v === undefined) return;
+					!name ? (args[key] = v) : (args[name][key] = v);
+				});
+			} else {
+				!name
+					? (args[pk] = dot.pick(tk, payload))
+					: (args[name][pk] = dot.pick(tk, payload));
+			}
+		}
+
+		if (!args["filter"]) args["filter"] = {};
+		setArg("filter", args);
+		args["record"] && setArg("record", args);
+		args["records"] && setArg("records", args);
+
+		dot.object(args);
+
+		return next({ args, context, ...other });
+	};
 class SchemaFieldHelper {
 	singleton;
 
@@ -36,6 +123,14 @@ class SchemaFieldHelper {
 				else if (rp.projection["*"] === undefined) rp.projection["*"] = true;
 				return next(rp);
 			});
+
+			if (pk) {
+				mongooseFn = mongooseFn.wrapResolve(
+					type === "query"
+						? queryWrapResolver(fnTypeConfig)
+						: mutationWrapResolver(fnTypeConfig)
+				);
+			}
 			const supportedSingularModeResolvers = ["updateOne", "updateById"];
 			const supportedPluralModeResolvers = ["updateMany"];
 			const supportedModeResolvers = [
