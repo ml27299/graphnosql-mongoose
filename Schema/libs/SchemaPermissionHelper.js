@@ -8,10 +8,15 @@ class SchemaPermissionHelper {
 	}
 
 	get permissions() {
-		return this.singleton.meta.permissions;
+		return this.singleton.meta.permissions.map(
+			(permission) => permission.value
+		);
 	}
 
 	generateShieldPermissions() {
+		if (!this.permissions.length) {
+			return null;
+		}
 		return shield(
 			this.permissions.reduce(
 				(result, permission) => Object.assign(result, permission),
