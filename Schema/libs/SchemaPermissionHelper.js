@@ -15,7 +15,7 @@ class SchemaPermissionHelper {
 
 	generateShieldPermissions() {
 		if (!this.permissions.length) {
-			return null;
+			return {};
 		}
 		return shield(
 			this.permissions.reduce(
