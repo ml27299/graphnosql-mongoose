@@ -1,6 +1,7 @@
 import required from "../../libs/required";
 import jwt from "jsonwebtoken";
 import { GraphQLEnumType } from "graphql";
+import dot from "dot-object";
 const Mode = new GraphQLEnumType({
 	name: `EnumMode`,
 	values: {
