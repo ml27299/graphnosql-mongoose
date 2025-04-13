@@ -1,6 +1,6 @@
 {
 	"name": "@graphnosql/mongoose",
-	"version": "0.3.33",
+	"version": "0.3.34",
 	"main": "dist/index.js",
 	"scripts": {
 		"rm:build": "rm -rf ./.webpack",
