@@ -21,8 +21,9 @@ class SchemaPermissionHelper {
 		return shield(
 			this.permissions.reduce(
 				(result, permission) => Object.assign(result, permission),
-				{ allowExternalErrors: !!this.allowExternalErrors }
-			)
+				{}
+			),
+			{ allowExternalErrors: this.allowExternalErrors }
 		);
 	}
 }
