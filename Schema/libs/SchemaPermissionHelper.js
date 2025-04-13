@@ -1,10 +1,11 @@
 import { shield } from "graphql-shield";
-
+const { NODE_ENV } = process.env;
 class SchemaPermissionHelper {
 	singleton;
-
-	constructor(singleton) {
+	allowExternalErrors;
+	constructor(singleton, { allowExternalErrors }) {
 		this.singleton = singleton;
+		this.allowExternalErrors = allowExternalErrors;
 	}
 
 	get permissions() {
@@ -20,7 +21,7 @@ class SchemaPermissionHelper {
 		return shield(
 			this.permissions.reduce(
 				(result, permission) => Object.assign(result, permission),
-				{}
+				{ allowExternalErrors: !!this.allowExternalErrors }
 			)
 		);
 	}
