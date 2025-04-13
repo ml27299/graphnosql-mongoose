@@ -31,21 +31,24 @@ class Schema {
 	schemaComposer;
 	value;
 
-	constructor({
-		directives = [],
-		unions = [],
-		interfaces = [],
-		middlewares = [],
-		configurations = [],
-		permissions = [],
-		descriptions = [],
-		overrides = [],
-		extensions = [],
-		definitions = [],
-		mutations = [],
-		queries = [],
-		resolvers = [],
-	}) {
+	constructor(
+		{
+			directives = [],
+			unions = [],
+			interfaces = [],
+			middlewares = [],
+			configurations = [],
+			permissions = [],
+			descriptions = [],
+			overrides = [],
+			extensions = [],
+			definitions = [],
+			mutations = [],
+			queries = [],
+			resolvers = [],
+		},
+		{ allowExternalErrors = false } = {}
+	) {
 		this.definitions = definitions;
 		this.mutations = mutations;
 		this.queries = queries;
@@ -68,7 +71,9 @@ class Schema {
 		this.SchemaDirectiveHelper = new SchemaDirectiveHelper(this);
 		this.SchemaFieldHelper = new SchemaFieldHelper(this);
 		this.SchemaNameHelper = new SchemaNameHelper(this);
-		this.SchemaPermissionHelper = new SchemaPermissionHelper(this);
+		this.SchemaPermissionHelper = new SchemaPermissionHelper(this, {
+			allowExternalErrors,
+		});
 		this.SchemaRelationHelper = new SchemaRelationHelper(this);
 		this.SchemaDescriptionHelper = new SchemaDescriptionHelper(this);
 		this.SchemaMiddlewareHelper = new SchemaMiddlewareHelper(this);
